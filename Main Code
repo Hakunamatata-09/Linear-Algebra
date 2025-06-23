@@ -1,0 +1,79 @@
+Published by Bcy243081|Muazzam Irshad.
+Link for Matlab Published Code: https://mosh-proda-us-east-1.mathworks.com/matlab/ui/R093af66b8c/ui/webgui/src/window.html?winId=5361c367-7bf0-452e-805c-a21f90906a20
+The code for further ease;
+function robotic_arm_gui()
+    % === Link lengths ===
+    L1 = 5;
+    L2 = 3;
+
+    % === Create figure ===
+    f = figure('Name', '2-Link Robotic Arm', 'NumberTitle', 'off', ...
+               'Position', [100 100 800 600]);
+
+    % === Axes for drawing arm ===
+    ax = axes('Parent', f, 'Position', [0.1 0.3 0.8 0.65]);
+    axis equal;
+    grid on;
+    xlim([-10 10]);
+    ylim([-10 10]);
+    xlabel('X');
+    ylabel('Y');
+    title('Interactive Robotic Arm using Linear Algebra');
+
+    % === UI Controls (Sliders) ===
+    uicontrol('Style', 'text', 'Position', [100 60 100 20], ...
+              'String', 'Joint 1 (θ1)', 'FontSize', 10);
+    s1 = uicontrol('Style', 'slider', 'Min', -180, 'Max', 180, ...
+                   'Value', 45, 'Position', [100 40 200 20], ...
+                   'Callback', @update_arm);
+
+    uicontrol('Style', 'text', 'Position', [500 60 100 20], ...
+              'String', 'Joint 2 (θ2)', 'FontSize', 10);
+    s2 = uicontrol('Style', 'slider', 'Min', -180, 'Max', 180, ...
+                   'Value', 30, 'Position', [500 40 200 20], ...
+                   'Callback', @update_arm);
+
+    % === Initialize plots ===
+    hold on;
+    base = plot(0, 0, 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'k');
+    link1 = plot([0, 0], [0, 0], 'r-', 'LineWidth', 3);
+    link2 = plot([0, 0], [0, 0], 'b-', 'LineWidth', 3);
+    joint1 = plot(0, 0, 'ko', 'MarkerSize', 6, 'MarkerFaceColor', 'k');
+    endEff = plot(0, 0, 'go', 'MarkerSize', 6, 'MarkerFaceColor', 'g');
+    eeText = text(0, 0, '', 'FontSize', 10);
+
+    % === Initial arm draw ===
+    update_arm();
+
+    % === Nested function for updating the arm ===
+    function update_arm(~, ~)
+        theta1 = deg2rad(get(s1, 'Value'));
+        theta2 = deg2rad(get(s2, 'Value'));
+
+        % Transform from base to joint 1
+        T0_1 = [cos(theta1), -sin(theta1), 0;
+                sin(theta1),  cos(theta1), 0;
+                0,            0,           1];
+
+        % Transform from joint 1 to joint 2
+        T1_2 = [cos(theta2), -sin(theta2), L1;
+                sin(theta2),  cos(theta2), 0;
+                0,            0,           1];
+
+        % Combine transformations
+        T0_2 = T0_1 * T1_2;
+
+        % Positions
+        P1 = T0_1 * [L1; 0; 1];      % End of first link
+        P2 = T0_2 * [L2; 0; 1];      % End effector
+
+        % Update plot data
+        set(link1, 'XData', [0, P1(1)], 'YData', [0, P1(2)]);
+        set(link2, 'XData', [P1(1), P2(1)], 'YData', [P1(2), P2(2)]);
+        set(joint1, 'XData', P1(1), 'YData', P1(2));
+        set(endEff, 'XData', P2(1), 'YData', P2(2));
+        set(eeText, 'Position', [P2(1)+0.3, P2(2)], ...
+                    'String', sprintf('End Effector (%.2f, %.2f)', P2(1), P2(2)));
+        drawnow;
+    end
+end
